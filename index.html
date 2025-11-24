@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Profit Calculator App</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        .tab-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .tab-inactive {
+            background: linear-gradient(135deg, #a8b3e8 0%, #b8a3d2 100%);
+        }
+        
+        .calc-button {
+            background: linear-gradient(145deg, #f3f4f6, #e5e7eb);
+            box-shadow: 3px 3px 6px #d1d5db, -3px -3px 6px #ffffff;
+            transition: all 0.2s ease;
+        }
+        
+        .calc-button:active {
+            box-shadow: inset 2px 2px 4px #d1d5db, inset -2px -2px 4px #ffffff;
+            transform: scale(0.98);
+        }
+        
+        .numeric-input {
+            width: 120px;
+            height: 40px;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .currency-display {
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .subtab-active {
+            background-color: #6366f1;
+            color: white;
+        }
+        
+        .subtab-inactive {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto p-2 sm:p-4 max-w-7xl">
+        <!-- Header -->
+        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 text-center">Currency Profit Calculator</h1>
+        
+        <!-- Tab Navigation -->
+        <div class="flex flex-wrap gap-2 mb-4 sm:mb-6">
+            <button onclick="switchTab('convert')" id="tab-convert" class="tab-active text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all flex-1 sm:flex-initial">
+                <span class="hidden sm:inline">Convert Currency</span>
+                <span class="sm:hidden">Convert</span>
+            </button>
+            <button onclick="switchTab('rates')" id="tab-rates" class="tab-inactive text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all flex-1 sm:flex-initial">
+                <span class="hidden sm:inline">Define Exchange Rates</span>
+                <span class="sm:hidden">Rates</span>
+            </button>
+            <button onclick="switchTab('profit')" id="tab-profit" class="tab-inactive text-white px-3 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-all flex-1 sm:flex-initial">
+                Profit
+            </button>
+        </div>
+        
+        <!-- Tab Content -->
+        <!-- Convert Currency Tab -->
+        <div id="content-convert" class="bg-white rounded-xl shadow-lg p-3 sm:p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <!-- Calculator Keypad -->
+                <div class="flex flex-col items-center order-2 lg:order-1">
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3 w-full max-w-xs sm:max-w-sm">
+                        <button onclick="appendToAmount('7')" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">7</button>
+                        <button onclick="appendToAmount('8')" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">8</button>
+                        <button onclick="appendToAmount('9')" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">9</button>
+                        <button onclick="appendToAmount('4')" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">4</button>
+                        <button onclick="appendToAmount('5')" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">5</button>
+                        <button onclick="appendToAmount('6')" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">6</button>
+                        <button onclick="appendToAmount('1')" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">1</button>
+                        <button onclick="appendToAmount('2')" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">2</button>
+                        <button onclick="appendToAmount('3')" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">3</button>
+                        <button onclick="toggleSign()" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">±</button>
+                        <button onclick="appendToAmount('0')" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">0</button>
+                        <button onclick="appendToAmount('.')" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium">.</button>
+                        <button onclick="clearAmount()" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium bg-red-100">C</button>
+                        <button onclick="backspace()" class="calc-button rounded-xl p-4 sm:p-6 text-lg sm:text-xl font-medium col-span-2">←</button>
+                    </div>
+                </div>
+                
+                <!-- Conversion Panel -->
+                <div class="flex flex-col space-y-4 order-1 lg:order-2">
+                    <div class="space-y-3 sm:space-y-4">
+                        <!-- Rate Reference Selector -->
+                        <div class="bg-indigo-50 p-3 rounded-lg">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">DZD Rate Reference</label>
+                            <select id="rate-reference" onchange="updateRateReference()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="EUR">Use EUR → DZD Rate</option>
+                                <option value="USD">Use USD → DZD Rate</option>
+                            </select>
+                            <div class="text-xs text-gray-600 mt-2" id="active-rate-display">
+                                <!-- Will show active rate -->
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">From Currency</label>
+                            <select id="from-currency" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="DZD" selected>DZD - Algerian Dinar</option>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="JPY">JPY - Japanese Yen</option>
+                                <option value="CNY">CNY - Chinese Yuan</option>
+                                <option value="RMB">RMB - Renminbi</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">To Currency</label>
+                            <select id="to-currency" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="DZD">DZD - Algerian Dinar</option>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="JPY">JPY - Japanese Yen</option>
+                                <option value="CNY">CNY - Chinese Yuan</option>
+                                <option value="RMB" selected>RMB - Renminbi</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                            <input type="text" id="convert-amount" placeholder="Enter amount" 
+                                   class="numeric-input w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                   onfocus="handleAmountFocus()" oninput="validateNumericInput(this)">
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button onclick="convertCurrency()" class="flex-1 bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 transition">
+                                Convert
+                            </button>
+                            <button onclick="swapCurrencies()" class="px-6 py-3 bg-gray-200 rounded-lg hover:bg-gray-300 transition" title="Swap currencies">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div id="conversion-result" class="mt-4 p-4 bg-gray-50 rounded-lg hidden">
+                            <p class="text-lg font-medium text-gray-700">Result:</p>
+                            <p class="text-2xl font-bold text-indigo-600 currency-display" id="result-text"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Define Exchange Rates Tab -->
+        <div id="content-rates" class="bg-white rounded-xl shadow-lg p-6 hidden">
+            <!-- Subtabs -->
+            <div class="flex space-x-2 mb-6">
+                <button onclick="switchSubtab('eur')" id="subtab-eur" class="subtab-active px-4 py-2 rounded-lg font-medium transition-all">
+                    EUR Reference
+                </button>
+                <button onclick="switchSubtab('usd')" id="subtab-usd" class="subtab-inactive px-4 py-2 rounded-lg font-medium transition-all">
+                    USD Reference
+                </button>
+            </div>
+            
+            <!-- EUR Reference Content -->
+            <div id="subcontent-eur" class="space-y-4">
+                <div class="flex items-center space-x-4">
+                    <span class="font-medium">1 EUR =</span>
+                    <input type="text" id="eur-to-dzd" placeholder="Enter DZD amount" 
+                           class="numeric-input px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                           oninput="validateNumericInput(this)">
+                    <span class="font-medium">DZD</span>
+                </div>
+            </div>
+            
+            <!-- USD Reference Content -->
+            <div id="subcontent-usd" class="space-y-4 hidden">
+                <div class="flex items-center space-x-4">
+                    <span class="font-medium">1 USD =</span>
+                    <input type="text" id="usd-to-dzd" placeholder="Enter DZD amount" 
+                           class="numeric-input px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                           oninput="validateNumericInput(this)">
+                    <span class="font-medium">DZD</span>
+                </div>
+            </div>
+            
+            <div class="mt-6 space-y-4">
+                <button onclick="saveRates()" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 transition">
+                    Save Rates
+                </button>
+                
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" id="use-manual-rates" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                    <label for="use-manual-rates" class="font-medium text-gray-700">Use manual DZD rates / Use live API DZD rates</label>
+                </div>
+                
+                <div id="saved-rates-display" class="p-4 bg-gray-50 rounded-lg hidden">
+                    <p class="text-sm text-gray-600">Saved rates:</p>
+                    <p class="font-medium" id="saved-rates-text"></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profit Tab -->
+        <div id="content-profit" class="bg-white rounded-xl shadow-lg p-3 sm:p-6 hidden">
+            <!-- Report Management and Export/Save Buttons -->
+            <div class="flex flex-col sm:flex-row justify-between gap-4 mb-4">
+                <!-- Report Name -->
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-medium text-gray-700">Report Name:</label>
+                    <input type="text" id="report-name" placeholder="Enter report name" 
+                           class="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                           value="Profit Analysis Report">
+                    <button onclick="newReport()" class="bg-green-600 text-white px-3 py-1 rounded-lg font-medium hover:bg-green-700 transition text-sm">
+                        New Report
+                    </button>
+                </div>
+                
+                <!-- Export Buttons -->
+                <div class="flex gap-2">
+                    <button onclick="printReport()" class="bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700 transition flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2z"></path>
+                        </svg>
+                        Print
+                    </button>
+                    <button onclick="exportToHTML()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Save Report
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Products Information Section -->
+            <div class="bg-blue-50 rounded-lg p-3 sm:p-6 mb-4 sm:mb-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800 mb-2 sm:mb-0">Products Information</h2>
+                    
+                    <!-- Rate Reference Selector for Profit Tab -->
+                    <div class="bg-white p-3 rounded-lg border-2 border-blue-300">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Select Conversion Rate:</label>
+                        <select id="profit-rate-reference" onchange="updateProfitRateReference()" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium">
+                            <option value="EUR">Use EUR → DZD Rate (1 EUR = 275 DZD)</option>
+                            <option value="USD">Use USD → DZD Rate (1 USD = 235 DZD)</option>
+                        </select>
+                        <div class="text-xs mt-2 font-medium" id="profit-active-rate-display">
+                            <!-- Will show active rate -->
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="text-sm text-gray-600 mb-4" id="current-rates-display">Fixed Rates: 1 EUR = 275 DZD | 1 USD = 235 DZD</p>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm bg-white rounded-lg overflow-hidden">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="px-4 py-2 text-left">Product Name</th>
+                                <th class="px-4 py-2 text-left">Price</th>
+                                <th class="px-4 py-2 text-left">Currency</th>
+                                <th class="px-4 py-2 text-left">Quantity</th>
+                                <th class="px-4 py-2 text-left">Unit</th>
+                                <th class="px-4 py-2 text-left">Items/Box</th>
+                                <th class="px-4 py-2 text-left">Total (DZD)</th>
+                                <th class="px-4 py-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-tbody">
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-blue-100 font-bold">
+                                <td colspan="6" class="px-4 py-2 text-right">Total:</td>
+                                <td class="px-4 py-2 currency-display" id="products-total">0.00 DZD</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <button onclick="addProduct()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition">
+                    + Add Product
+                </button>
+            </div>
+            
+            <!-- Fixed Expenses Section -->
+            <div class="bg-amber-50 rounded-lg p-3 sm:p-6 mb-4 sm:mb-6">
+                <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">Fixed Expenses</h2>
+                
+                <div class="mb-4 flex flex-col sm:flex-row gap-4">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700">Display Results In:</label>
+                        <select id="expenses-currency" onchange="updateExpensesDisplay()" class="ml-2 px-3 py-1 border border-gray-300 rounded-lg">
+                            <option value="DZD">DZD</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="GBP">GBP</option>
+                            <option value="CNY">CNY</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="include-tax" checked onchange="toggleTaxInclusion()" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                        <label for="include-tax" class="text-sm font-medium text-gray-700">Include TAX (5%) in expenses</label>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm bg-white rounded-lg overflow-hidden">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="px-4 py-2 text-left">Expense Name</th>
+                                <th class="px-4 py-2 text-left">Amount</th>
+                                <th class="px-4 py-2 text-left">Currency</th>
+                                <th class="px-4 py-2 text-left">Total</th>
+                                <th class="px-4 py-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenses-tbody">
+                            <tr class="bg-yellow-50">
+                                <td class="px-4 py-2 font-medium">TAX (5% of products)</td>
+                                <td class="px-4 py-2" id="tax-amount">--</td>
+                                <td class="px-4 py-2">DZD</td>
+                                <td class="px-4 py-2 font-medium currency-display" id="tax-total">--</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-amber-100 font-bold">
+                                <td colspan="3" class="px-4 py-2 text-right">Total:</td>
+                                <td class="px-4 py-2 currency-display" id="expenses-total">0.00 DZD</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <button onclick="addExpense()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition">
+                    + Add Expense
+                </button>
+            </div>
+            
+            <!-- Profit Analysis Section -->
+            <div class="bg-green-50 rounded-lg p-3 sm:p-6">
+                <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">Profit Analysis</h2>
+                
+                <div class="mb-4">
+                    <label class="text-sm font-medium text-gray-700">Show results in currency:</label>
+                    <select id="profit-currency" onchange="updateProfitDisplay()" class="ml-2 px-3 py-1 border border-gray-300 rounded-lg">
+                        <option value="DZD">DZD</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="CNY">CNY</option>
+                    </select>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm bg-white rounded-lg overflow-hidden">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="px-3 py-2 text-left">Product</th>
+                                <th class="px-3 py-2 text-left">Break-even Price</th>
+                                <th class="px-3 py-2 text-left">Desired Margin (%)</th>
+                                <th class="px-3 py-2 text-left">Selling Price</th>
+                                <th class="px-3 py-2 text-left">Competitor Price</th>
+                                <th class="px-3 py-2 text-left">Actual Margin (%)</th>
+                                <th class="px-3 py-2 text-left">Total Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="profit-analysis-tbody">
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-green-100">
+                                <td colspan="7" class="px-3 py-3">
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div>
+                                            <div class="text-xs text-gray-600">Grand Total Cost</div>
+                                            <div class="font-bold currency-display" id="grand-total-cost">0.00 DZD</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-gray-600">Projected Revenue</div>
+                                            <div class="font-bold currency-display" id="projected-revenue">0.00 DZD</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-gray-600">Projected Net Profit</div>
+                                            <div class="font-bold currency-display" id="projected-net-profit">0.00 DZD</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-gray-600">Overall Margin (%)</div>
+                                            <div class="font-bold" id="overall-margin">0.00%</div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global state
+        let currentTab = 'convert';
+        let currentSubtab = 'eur';
+        let activeRateReference = 'EUR'; // EUR or USD for Convert tab
+        let profitRateReference = 'EUR'; // EUR or USD for Profit tab
+        // Fixed exchange rates
+        const FIXED_RATES = {
+            EUR_DZD: 275,
+            USD_DZD: 235,
+            EUR_CNY: 8.19,
+            USD_CNY: 7.11,
+            EUR_USD: 1.087 // Derived: 275/235 ≈ 1.17, but using standard rate
+        };
+        let manualRates = {
+            EUR: FIXED_RATES.EUR_DZD,
+            USD: FIXED_RATES.USD_DZD
+        };
+        let useManualRates = true; // Default to true to use fixed rates
+        let products = [];
+        let expenses = [];
+        let productIdCounter = 0;
+        let expenseIdCounter = 0;
+        let includeTax = true; // New state for tax inclusion
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize with fixed rates
+            document.getElementById('eur-to-dzd').value = FIXED_RATES.EUR_DZD;
+            document.getElementById('usd-to-dzd').value = FIXED_RATES.USD_DZD;
+            document.getElementById('use-manual-rates').checked = true;
+            
+            // Load profit rate reference
+            const savedProfitRef = localStorage.getItem('profitRateReference');
+            if (savedProfitRef) {
+                profitRateReference = savedProfitRef;
+                document.getElementById('profit-rate-reference').value = savedProfitRef;
+            }
+            
+            updateSavedRatesDisplay();
+            updateCurrentRatesDisplay();
+            updateActiveRateDisplay();
+            updateProfitActiveRateDisplay();
+        });
+        
+        // Tab switching
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab styles
+            document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+                if (btn.id === `tab-${tab}`) {
+                    btn.className = btn.className.replace('tab-inactive', 'tab-active');
+                } else {
+                    btn.className = btn.className.replace('tab-active', 'tab-inactive');
+                }
+            });
+            
+            // Update content visibility
+            document.querySelectorAll('[id^="content-"]').forEach(content => {
+                if (content.id === `content-${tab}`) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+            
+            if (tab === 'profit') {
+                updateCurrentRatesDisplay();
+            }
+        }
+        
+        // Subtab switching
+        function switchSubtab(subtab) {
+            currentSubtab = subtab;
+            
+            document.querySelectorAll('[id^="subtab-"]').forEach(btn => {
+                if (btn.id === `subtab-${subtab}`) {
+                    btn.className = btn.className.replace('subtab-inactive', 'subtab-active');
+                } else {
+                    btn.className = btn.className.replace('subtab-active', 'subtab-inactive');
+                }
+            });
+            
+            document.querySelectorAll('[id^="subcontent-"]').forEach(content => {
+                if (content.id === `subcontent-${subtab}`) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Calculator functions
+        function appendToAmount(value) {
+            const input = document.getElementById('convert-amount');
+            if (input.value === '' || input.value === '0') {
+                input.value = value === '.' ? '0.' : value;
+            } else {
+                if (value === '.' && input.value.includes('.')) return;
+                input.value += value;
+            }
+            validateNumericInput(input);
+        }
+        
+        function clearAmount() {
+            document.getElementById('convert-amount').value = '';
+        }
+        
+        function backspace() {
+            const input = document.getElementById('convert-amount');
+            input.value = input.value.slice(0, -1);
+        }
+        
+        function toggleSign() {
+            const input = document.getElementById('convert-amount');
+            if (input.value && input.value !== '0') {
+                input.value = input.value.startsWith('-') ? 
+                    input.value.substring(1) : '-' + input.value;
+            }
+        }
+        
+        function handleAmountFocus() {
+            const input = document.getElementById('convert-amount');
+            if (input.value === '0') {
+                input.value = '';
+            }
+        }
+        
+        function validateNumericInput(input) {
+            let value = input.value;
+            
+            // Remove non-numeric characters except decimal point and minus
+            value = value.replace(/[^0-9.-]/g, '');
+            
+            // Handle multiple decimal points
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            
+            // Remove leading zeros
+            if (value.length > 1 && value[0] === '0' && value[1] !== '.') {
+                value = value.substring(1);
+            }
+            
+            input.value = value;
+        }
+        
+        // Currency conversion
+        function convertCurrency() {
+            const amount = parseFloat(document.getElementById('convert-amount').value);
+            const fromCurrency = document.getElementById('from-currency').value;
+            const toCurrency = document.getElementById('to-currency').value;
+            
+            if (!amount || isNaN(amount)) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            
+            // Treat RMB as CNY
+            const from = fromCurrency === 'RMB' ? 'CNY' : fromCurrency;
+            const to = toCurrency === 'RMB' ? 'CNY' : toCurrency;
+            
+            try {
+                let result = performConversion(amount, from, to);
+                
+                // Display result
+                if (result !== undefined) {
+                    const resultDiv = document.getElementById('conversion-result');
+                    const resultText = document.getElementById('result-text');
+                    
+                    if (toCurrency === 'DZD') {
+                        resultText.textContent = formatDZD(result);
+                    } else {
+                        resultText.textContent = `${result.toFixed(2)} ${toCurrency}`;
+                    }
+                    
+                    resultDiv.classList.remove('hidden');
+                }
+                
+            } catch (error) {
+                alert('Error converting currency: ' + error.message);
+            }
+        }
+        
+        function performConversion(amount, from, to) {
+            if (from === to) return amount;
+            
+            // Use the active rate reference (EUR or USD) for DZD conversions
+            const useEURPath = activeRateReference === 'EUR';
+            
+            // EUR-based conversions
+            if (useEURPath) {
+                // DZD to EUR: EUR = DZD / 275
+                if (from === 'DZD' && to === 'EUR') {
+                    return amount / 275;
+                }
+                // EUR to DZD: DZD = EUR * 275
+                if (from === 'EUR' && to === 'DZD') {
+                    return amount * 275;
+                }
+                // EUR to CNY: CNY = EUR * 8.19
+                if (from === 'EUR' && to === 'CNY') {
+                    return amount * 8.19;
+                }
+                // CNY to EUR: EUR = CNY / 8.19
+                if (from === 'CNY' && to === 'EUR') {
+                    return amount / 8.19;
+                }
+                // DZD to CNY (EUR path): CNY = (DZD / 275) * 8.19
+                if (from === 'DZD' && to === 'CNY') {
+                    return (amount / 275) * 8.19;
+                }
+                // CNY to DZD (EUR path): DZD = (CNY / 8.19) * 275
+                if (from === 'CNY' && to === 'DZD') {
+                    return (amount / 8.19) * 275;
+                }
+            }
+            
+            // USD-based conversions
+            if (!useEURPath) {
+                // DZD to USD: USD = DZD / 235
+                if (from === 'DZD' && to === 'USD') {
+                    return amount / 235;
+                }
+                // USD to DZD: DZD = USD * 235
+                if (from === 'USD' && to === 'DZD') {
+                    return amount * 235;
+                }
+                // USD to CNY: CNY = USD * 7.11
+                if (from === 'USD' && to === 'CNY') {
+                    return amount * 7.11;
+                }
+                // CNY to USD: USD = CNY / 7.11
+                if (from === 'CNY' && to === 'USD') {
+                    return amount / 7.11;
+                }
+                // DZD to CNY (USD path): CNY = (DZD / 235) * 7.11
+                if (from === 'DZD' && to === 'CNY') {
+                    return (amount / 235) * 7.11;
+                }
+                // CNY to DZD (USD path): DZD = (CNY / 7.11) * 235
+                if (from === 'CNY' && to === 'DZD') {
+                    return (amount / 7.11) * 235;
+                }
+            }
+            
+            // Cross-reference conversions (always available)
+            // EUR to USD: USD = (EUR * 275) / 235
+            if (from === 'EUR' && to === 'USD') {
+                return (amount * 275) / 235;
+            }
+            // USD to EUR: EUR = (USD * 235) / 275
+            if (from === 'USD' && to === 'EUR') {
+                return (amount * 235) / 275;
+            }
+            
+            // Handle conversions that might not be direct but use selected path
+            if (useEURPath) {
+                // Convert via EUR
+                if (from === 'DZD' && to === 'USD') {
+                    // DZD -> EUR -> USD
+                    const eur = amount / 275;
+                    return (eur * 275) / 235;
+                }
+                if (from === 'USD' && to === 'DZD') {
+                    // USD -> EUR -> DZD
+                    const eur = (amount * 235) / 275;
+                    return eur * 275;
+                }
+                if (from === 'USD' && to === 'CNY') {
+                    // USD -> EUR -> CNY
+                    const eur = (amount * 235) / 275;
+                    return eur * 8.19;
+                }
+                if (from === 'CNY' && to === 'USD') {
+                    // CNY -> EUR -> USD
+                    const eur = amount / 8.19;
+                    return (eur * 275) / 235;
+                }
+            } else {
+                // Convert via USD
+                if (from === 'DZD' && to === 'EUR') {
+                    // DZD -> USD -> EUR
+                    const usd = amount / 235;
+                    return (usd * 235) / 275;
+                }
+                if (from === 'EUR' && to === 'DZD') {
+                    // EUR -> USD -> DZD
+                    const usd = (amount * 275) / 235;
+                    return usd * 235;
+                }
+                if (from === 'EUR' && to === 'CNY') {
+                    // EUR -> USD -> CNY
+                    const usd = (amount * 275) / 235;
+                    return usd * 7.11;
+                }
+                if (from === 'CNY' && to === 'EUR') {
+                    // CNY -> USD -> EUR
+                    const usd = amount / 7.11;
+                    return (usd * 235) / 275;
+                }
+            }
+            
+            // Handle other currencies (GBP, JPY) via selected reference currency
+            if (from === 'GBP' || from === 'JPY' || to === 'GBP' || to === 'JPY') {
+                // Define exchange rates relative to USD
+                const ratesVsUSD = {
+                    'GBP': 0.79,
+                    'JPY': 149.50
+                };
+                
+                let usdAmount = amount;
+                
+                // Convert from source to USD
+                if (from === 'EUR') {
+                    usdAmount = (amount * 275) / 235;
+                } else if (from === 'DZD') {
+                    usdAmount = amount / 235;
+                } else if (from === 'CNY') {
+                    usdAmount = amount / 7.11;
+                } else if (from === 'GBP') {
+                    usdAmount = amount / ratesVsUSD['GBP'];
+                } else if (from === 'JPY') {
+                    usdAmount = amount / ratesVsUSD['JPY'];
+                }
+                
+                // Convert from USD to target
+                if (to === 'EUR') {
+                    return (usdAmount * 235) / 275;
+                } else if (to === 'DZD') {
+                    return usdAmount * 235;
+                } else if (to === 'CNY') {
+                    return usdAmount * 7.11;
+                } else if (to === 'GBP') {
+                    return usdAmount * ratesVsUSD['GBP'];
+                } else if (to === 'JPY') {
+                    return usdAmount * ratesVsUSD['JPY'];
+                } else if (to === 'USD') {
+                    return usdAmount;
+                }
+            }
+            
+            // Default fallback - should not reach here if all cases are handled
+            return amount;
+        }
+        
+        function swapCurrencies() {
+            const fromSelect = document.getElementById('from-currency');
+            const toSelect = document.getElementById('to-currency');
+            
+            const temp = fromSelect.value;
+            fromSelect.value = toSelect.value;
+            toSelect.value = temp;
+            
+            const amount = document.getElementById('convert-amount').value;
+            if (amount && !isNaN(parseFloat(amount))) {
+                convertCurrency();
+            }
+        }
+        
+        // Exchange rates management
+        function saveRates() {
+            const eurRate = parseFloat(document.getElementById('eur-to-dzd').value);
+            const usdRate = parseFloat(document.getElementById('usd-to-dzd').value);
+            
+            if (eurRate && !isNaN(eurRate)) {
+                manualRates.EUR = eurRate;
+            }
+            
+            if (usdRate && !isNaN(usdRate)) {
+                manualRates.USD = usdRate;
+            }
+            
+            useManualRates = document.getElementById('use-manual-rates').checked;
+            
+            // Save to localStorage
+            localStorage.setItem('manualRates', JSON.stringify(manualRates));
+            localStorage.setItem('useManualRates', useManualRates);
+            
+            // Update display
+            updateSavedRatesDisplay();
+            updateCurrentRatesDisplay();
+            
+            alert('Exchange rates saved successfully!');
+        }
+        
+        function loadSavedRates() {
+            const saved = localStorage.getItem('manualRates');
+            if (saved) {
+                manualRates = JSON.parse(saved);
+                
+                if (manualRates.EUR) {
+                    document.getElementById('eur-to-dzd').value = manualRates.EUR;
+                }
+                if (manualRates.USD) {
+                    document.getElementById('usd-to-dzd').value = manualRates.USD;
+                }
+            }
+            
+            // Load active rate reference
+            const savedRef = localStorage.getItem('activeRateReference');
+            if (savedRef) {
+                activeRateReference = savedRef;
+                document.getElementById('rate-reference').value = savedRef;
+            }
+            
+            useManualRates = localStorage.getItem('useManualRates') === 'true';
+            document.getElementById('use-manual-rates').checked = useManualRates;
+            
+            updateSavedRatesDisplay();
+        }
+        
+        function updateSavedRatesDisplay() {
+            const display = document.getElementById('saved-rates-display');
+            const text = document.getElementById('saved-rates-text');
+            
+            if (manualRates.EUR || manualRates.USD) {
+                let ratesText = [];
+                if (manualRates.EUR) ratesText.push(`1 EUR = ${manualRates.EUR} DZD`);
+                if (manualRates.USD) ratesText.push(`1 USD = ${manualRates.USD} DZD`);
+                
+                text.textContent = ratesText.join(' | ');
+                display.classList.remove('hidden');
+            } else {
+                display.classList.add('hidden');
+            }
+        }
+        
+        function updateCurrentRatesDisplay() {
+            const display = document.getElementById('current-rates-display');
+            let eurText = manualRates.EUR ? `${manualRates.EUR} DZD` : '-- DZD';
+            let usdText = manualRates.USD ? `${manualRates.USD} DZD` : '-- DZD';
+            display.textContent = `Current Rates: 1 EUR = ${eurText} | 1 USD = ${usdText}`;
+        }
+        
+        // Products management
+        function addProduct() {
+            const id = productIdCounter++;
+            const product = {
+                id: id,
+                name: '',
+                price: null,
+                currency: 'USD',
+                quantity: null,
+                unit: 'Item',
+                itemsPerBox: null
+            };
+            
+            products.push(product);
+            
+            const tbody = document.getElementById('products-tbody');
+            const row = document.createElement('tr');
+            row.id = `product-row-${id}`;
+            row.innerHTML = `
+                <td class="px-4 py-2">
+                    <input type="text" placeholder="Product name" class="w-full px-2 py-1 border rounded"
+                           onchange="updateProduct(${id}, 'name', this.value)">
+                </td>
+                <td class="px-4 py-2">
+                    <input type="text" placeholder="Price" class="numeric-input px-2 py-1 border rounded"
+                           oninput="validateNumericInput(this)"
+                           onchange="updateProduct(${id}, 'price', parseFloat(this.value))">
+                </td>
+                <td class="px-4 py-2">
+                    <select class="px-2 py-1 border rounded" onchange="updateProduct(${id}, 'currency', this.value)">
+                        <option value="USD" selected>USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="DZD">DZD</option>
+                        <option value="GBP">GBP</option>
+                        <option value="CNY">CNY</option>
+                    </select>
+                </td>
+                <td class="px-4 py-2">
+                    <input type="text" placeholder="Quantity" class="numeric-input px-2 py-1 border rounded"
+                           oninput="validateNumericInput(this)"
+                           onchange="updateProduct(${id}, 'quantity', parseFloat(this.value))">
+                </td>
+                <td class="px-4 py-2">
+                    <select class="px-2 py-1 border rounded" onchange="updateProduct(${id}, 'unit', this.value)">
+                        <option value="Item" selected>Item</option>
+                        <option value="Unit">Unit</option>
+                        <option value="Box">Box</option>
+                        <option value="Kg">Kg</option>
+                    </select>
+                </td>
+                <td class="px-4 py-2">
+                    <input type="text" placeholder="Items" class="numeric-input px-2 py-1 border rounded hidden"
+                           id="items-per-box-${id}"
+                           oninput="validateNumericInput(this)"
+                           onchange="updateProduct(${id}, 'itemsPerBox', parseFloat(this.value))">
+                </td>
+                <td class="px-4 py-2 font-medium currency-display" id="product-total-${id}">--</td>
+                <td class="px-4 py-2">
+                    <button onclick="removeProduct(${id})" class="text-red-600 hover:text-red-800">×</button>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+            
+            // Add profit analysis row
+            addProfitAnalysisRow(id, product);
+        }
+        
+        function updateProduct(id, field, value) {
+            const product = products.find(p => p.id === id);
+            if (product) {
+                product[field] = value;
+                
+                // Show/hide items per box field
+                if (field === 'unit') {
+                    const itemsField = document.getElementById(`items-per-box-${id}`);
+                    if (value === 'Box' || value === 'Unit') {
+                        itemsField.classList.remove('hidden');
+                    } else {
+                        itemsField.classList.add('hidden');
+                        product.itemsPerBox = null;
+                    }
+                }
+                
+                // Update total
+                updateProductTotal(id);
+                updateTax();
+                updateProfitAnalysis(id);
+            }
+        }
+        
+        function updateProductTotal(id) {
+            const product = products.find(p => p.id === id);
+            const totalElement = document.getElementById(`product-total-${id}`);
+            
+            if (product && product.price && product.quantity) {
+                let total = product.price * product.quantity;
+                
+                // Convert to DZD if needed using profit-specific conversion
+                if (product.currency !== 'DZD') {
+                    total = performProfitConversion(total, product.currency, 'DZD');
+                }
+                
+                totalElement.textContent = formatDZD(total);
+                product.totalDZD = total;
+            } else {
+                totalElement.textContent = '--';
+                product.totalDZD = 0;
+            }
+            
+            // Update products total
+            updateProductsTotal();
+        }
+        
+        function updateProductsTotal() {
+            const totalProductsDZD = products.reduce((sum, p) => sum + (p.totalDZD || 0), 0);
+            document.getElementById('products-total').textContent = formatDZD(totalProductsDZD);
+        }
+        
+        function removeProduct(id) {
+            products = products.filter(p => p.id !== id);
+            document.getElementById(`product-row-${id}`).remove();
+            removeProfitAnalysisRow(id);
+            updateProductsTotal();
+            updateTax();
+        }
+        
+        // Expenses management
+        function addExpense() {
+            const id = expenseIdCounter++;
+            const expense = {
+                id: id,
+                name: '',
+                amount: null,
+                currency: 'DZD'
+            };
+            
+            expenses.push(expense);
+            
+            const tbody = document.getElementById('expenses-tbody');
+            const row = document.createElement('tr');
+            row.id = `expense-row-${id}`;
+            row.innerHTML = `
+                <td class="px-4 py-2">
+                    <input type="text" placeholder="Expense name" class="w-full px-2 py-1 border rounded"
+                           onchange="updateExpense(${id}, 'name', this.value)">
+                </td>
+                <td class="px-4 py-2">
+                    <input type="text" placeholder="Amount" class="numeric-input px-2 py-1 border rounded"
+                           oninput="validateNumericInput(this)"
+                           onchange="updateExpense(${id}, 'amount', parseFloat(this.value))">
+                </td>
+                <td class="px-4 py-2">
+                    <select class="px-2 py-1 border rounded" onchange="updateExpense(${id}, 'currency', this.value)">
+                        <option value="DZD" selected>DZD</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="CNY">CNY</option>
+                    </select>
+                </td>
+                <td class="px-4 py-2 font-medium currency-display" id="expense-total-${id}">--</td>
+                <td class="px-4 py-2">
+                    <button onclick="removeExpense(${id})" class="text-red-600 hover:text-red-800">×</button>
+                </td>
+            `;
+            
+            // Insert before the tax row
+            const taxRow = tbody.querySelector('tr');
+            tbody.insertBefore(row, taxRow.nextSibling);
+        }
+        
+        function updateExpense(id, field, value) {
+            const expense = expenses.find(e => e.id === id);
+            if (expense) {
+                expense[field] = value;
+                updateExpenseTotal(id);
+                updateAllProfitAnalysis();
+            }
+        }
+        
+        function updateExpenseTotal(id) {
+            const expense = expenses.find(e => e.id === id);
+            const totalElement = document.getElementById(`expense-total-${id}`);
+            const displayCurrency = document.getElementById('expenses-currency').value;
+            
+            if (expense && expense.amount) {
+                let total = expense.amount;
+                
+                // Convert to DZD first
+                if (expense.currency !== 'DZD') {
+                    if (useManualRates) {
+                        if (expense.currency === 'USD' && manualRates.USD) {
+                            total *= manualRates.USD;
+                        } else if (expense.currency === 'EUR' && manualRates.EUR) {
+                            total *= manualRates.EUR;
+                        }
+                    } else {
+                        const mockRates = { 'USD': 135.50, 'EUR': 147.30, 'GBP': 171.20, 'CNY': 18.74 };
+                        total *= mockRates[expense.currency] || 135.50;
+                    }
+                }
+                
+                expense.totalDZD = total;
+                
+                // Convert to display currency if needed
+                if (displayCurrency !== 'DZD') {
+                    total = convertFromDZD(total, displayCurrency);
+                    totalElement.textContent = `${total.toFixed(2)} ${displayCurrency}`;
+                } else {
+                    totalElement.textContent = formatDZD(total);
+                }
+            } else {
+                totalElement.textContent = '--';
+                expense.totalDZD = 0;
+            }
+            
+            // Update expenses total
+            updateExpensesTotal();
+        }
+        
+        function updateExpensesTotal() {
+            const totalExpensesDZD = expenses.reduce((sum, e) => sum + (e.totalDZD || 0), 0);
+            const totalProductsDZD = products.reduce((sum, p) => sum + (p.totalDZD || 0), 0);
+            const tax = totalProductsDZD * 0.05;
+            const grandTotalExpenses = totalExpensesDZD + tax;
+            
+            const displayCurrency = document.getElementById('expenses-currency').value;
+            const totalElement = document.getElementById('expenses-total');
+            
+            if (displayCurrency === 'DZD') {
+                totalElement.textContent = formatDZD(grandTotalExpenses);
+            } else {
+                const converted = convertFromDZD(grandTotalExpenses, displayCurrency);
+                totalElement.textContent = `${converted.toFixed(2)} ${displayCurrency}`;
+            }
+        }
+        
+        function removeExpense(id) {
+            expenses = expenses.filter(e => e.id !== id);
+            document.getElementById(`expense-row-${id}`).remove();
+            updateExpensesTotal();
+            updateAllProfitAnalysis();
+        }
+        
+        function updateTax() {
+            const totalProducts = products.reduce((sum, p) => sum + (p.totalDZD || 0), 0);
+            const tax = totalProducts * 0.05;
+            
+            document.getElementById('tax-amount').textContent = tax.toFixed(2);
+            document.getElementById('tax-total').textContent = formatDZD(tax);
+            
+            updateExpensesTotal();
+            updateAllProfitAnalysis();
+        }
+        
+        function updateExpensesDisplay() {
+            expenses.forEach(e => updateExpenseTotal(e.id));
+        }
+        
+        // Profit Analysis
+        function addProfitAnalysisRow(productId, product) {
+            const tbody = document.getElementById('profit-analysis-tbody');
+            
+            const row = document.createElement('tr');
+            row.id = `profit-row-${productId}`;
+            row.innerHTML = `
+                <td class="px-3 py-2">
+                    <span id="profit-name-${productId}">${product.name || 'Product ' + (productId + 1)}</span>
+                </td>
+                <td class="px-3 py-2">
+                    <div class="currency-display" id="breakeven-${productId}">--</div>
+                    <div class="text-xs text-gray-500" id="breakeven-details-${productId}"></div>
+                </td>
+                <td class="px-3 py-2">
+                    <input type="text" placeholder="%" class="numeric-input px-2 py-1 border rounded w-20"
+                           id="margin-${productId}"
+                           oninput="validateNumericInput(this)"
+                           onchange="updateMargin(${productId}, this.value)">
+                </td>
+                <td class="px-3 py-2">
+                    <input type="text" placeholder="Price" class="numeric-input px-2 py-1 border rounded"
+                           id="selling-${productId}"
+                           oninput="validateNumericInput(this)"
+                           onchange="updateSellingPrice(${productId}, this.value)">
+                </td>
+                <td class="px-3 py-2">
+                    <input type="text" placeholder="Price" class="numeric-input px-2 py-1 border rounded"
+                           id="competitor-${productId}"
+                           oninput="validateNumericInput(this)"
+                           onchange="updateCompetitorPrice(${productId}, this.value)">
+                </td>
+                <td class="px-3 py-2">
+                    <span class="font-medium" id="actual-margin-${productId}">--</span>
+                </td>
+                <td class="px-3 py-2">
+                    <span class="font-medium currency-display" id="total-profit-${productId}">--</span>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        }
+        
+        function removeProfitAnalysisRow(productId) {
+            const element = document.getElementById(`profit-row-${productId}`);
+            if (element) element.remove();
+        }
+        
+        function updateCompetitorPrice(productId, value) {
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                product.competitorPrice = parseFloat(value) || null;
+            }
+        }
+        
+        function updateProfitAnalysis(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product || !product.totalDZD) return;
+            
+            // Calculate allocated expenses
+            const totalProductsDZD = products.reduce((sum, p) => sum + (p.totalDZD || 0), 0);
+            const totalExpensesDZD = expenses.reduce((sum, e) => sum + (e.totalDZD || 0), 0);
+            const tax = includeTax ? totalProductsDZD * 0.05 : 0; // Respect tax checkbox
+            const totalFixedExpenses = totalExpensesDZD + tax;
+            
+            const allocation = totalProductsDZD > 0 ? product.totalDZD / totalProductsDZD : 0;
+            const allocatedExpenses = totalFixedExpenses * allocation;
+            
+            // Calculate break-even
+            const totalCost = product.totalDZD + allocatedExpenses;
+            const breakeven = product.quantity ? totalCost / product.quantity : 0;
+            product.breakevenDZD = breakeven;
+            
+            // Update display
+            const displayCurrency = document.getElementById('profit-currency').value;
+            const breakevenElement = document.getElementById(`breakeven-${productId}`);
+            const detailsElement = document.getElementById(`breakeven-details-${productId}`);
+            
+            if (displayCurrency === 'DZD') {
+                breakevenElement.textContent = formatDZD(breakeven);
+            } else {
+                const converted = convertFromDZD(breakeven, displayCurrency);
+                breakevenElement.textContent = `${converted.toFixed(2)} ${displayCurrency}`;
+            }
+            
+            // Show details if items per box
+            if (product.itemsPerBox && (product.unit === 'Box' || product.unit === 'Unit')) {
+                const perItem = breakeven / product.itemsPerBox;
+                if (displayCurrency === 'DZD') {
+                    detailsElement.textContent = `Per item: ${formatDZD(perItem)}`;
+                } else {
+                    const itemConverted = convertFromDZD(perItem, displayCurrency);
+                    detailsElement.textContent = `Per item: ${itemConverted.toFixed(2)} ${displayCurrency}`;
+                }
+            } else {
+                detailsElement.textContent = '';
+            }
+            
+            // Update product name in profit analysis
+            const nameElement = document.getElementById(`profit-name-${productId}`);
+            if (nameElement && product.name) {
+                nameElement.textContent = product.name;
+            } else if (nameElement) {
+                nameElement.textContent = 'Product ' + (productId + 1);
+            }
+            
+            // Calculate actual margin and total profit if selling price exists
+            const sellingPriceInput = document.getElementById(`selling-${productId}`);
+            if (sellingPriceInput && sellingPriceInput.value) {
+                calculateActualMarginAndProfit(productId);
+            }
+        }
+        
+        function calculateActualMarginAndProfit(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product || !product.breakevenDZD || !product.quantity) return;
+            
+            const sellingPriceInput = document.getElementById(`selling-${productId}`);
+            const sellingPrice = parseFloat(sellingPriceInput.value);
+            
+            if (!isNaN(sellingPrice) && sellingPrice > 0) {
+                // Store selling price in DZD
+                product.sellingPriceDZD = sellingPrice;
+                
+                // Calculate actual margin
+                const actualMargin = ((sellingPrice - product.breakevenDZD) / product.breakevenDZD) * 100;
+                const actualMarginElement = document.getElementById(`actual-margin-${productId}`);
+                actualMarginElement.textContent = `${actualMargin.toFixed(2)}%`;
+                
+                if (actualMargin < 0) {
+                    actualMarginElement.style.color = '#ef4444'; // red for loss
+                } else {
+                    actualMarginElement.style.color = '#10b981'; // green for profit
+                }
+                
+                // Calculate total profit
+                const totalProfit = (sellingPrice - product.breakevenDZD) * product.quantity;
+                product.totalProfitDZD = totalProfit;
+                const totalProfitElement = document.getElementById(`total-profit-${productId}`);
+                const displayCurrency = document.getElementById('profit-currency').value;
+                
+                if (displayCurrency === 'DZD') {
+                    totalProfitElement.textContent = formatDZD(totalProfit);
+                } else {
+                    const converted = convertFromDZD(totalProfit, displayCurrency);
+                    totalProfitElement.textContent = `${converted.toFixed(2)} ${displayCurrency}`;
+                }
+                
+                if (totalProfit < 0) {
+                    totalProfitElement.style.color = '#ef4444'; // red for loss
+                } else {
+                    totalProfitElement.style.color = '#10b981'; // green for profit
+                }
+            } else {
+                document.getElementById(`actual-margin-${productId}`).textContent = '--';
+                document.getElementById(`total-profit-${productId}`).textContent = '--';
+                product.sellingPriceDZD = null;
+                product.totalProfitDZD = null;
+            }
+            
+            // Update summary metrics
+            updateProfitSummary();
+        }
+        
+        function updateProfitSummary() {
+            const displayCurrency = document.getElementById('profit-currency').value;
+            
+            // Calculate totals in DZD
+            const totalProductsDZD = products.reduce((sum, p) => sum + (p.totalDZD || 0), 0);
+            const totalExpensesDZD = expenses.reduce((sum, e) => sum + (e.totalDZD || 0), 0);
+            const tax = totalProductsDZD * 0.05;
+            const grandTotalCostDZD = totalProductsDZD + totalExpensesDZD + tax;
+            
+            // Calculate projected revenue and profit
+            let projectedRevenueDZD = 0;
+            let hasSellingPrices = false;
+            
+            products.forEach(p => {
+                if (p.sellingPriceDZD && p.quantity) {
+                    projectedRevenueDZD += p.sellingPriceDZD * p.quantity;
+                    hasSellingPrices = true;
+                }
+            });
+            
+            const projectedNetProfitDZD = projectedRevenueDZD - grandTotalCostDZD;
+            const overallMargin = grandTotalCostDZD > 0 ? (projectedNetProfitDZD / grandTotalCostDZD) * 100 : 0;
+            
+            // Update display elements
+            const grandTotalCostEl = document.getElementById('grand-total-cost');
+            const projectedRevenueEl = document.getElementById('projected-revenue');
+            const projectedNetProfitEl = document.getElementById('projected-net-profit');
+            const overallMarginEl = document.getElementById('overall-margin');
+            
+            if (displayCurrency === 'DZD') {
+                grandTotalCostEl.textContent = formatDZD(grandTotalCostDZD);
+                projectedRevenueEl.textContent = hasSellingPrices ? formatDZD(projectedRevenueDZD) : '0.00 DZD';
+                projectedNetProfitEl.textContent = hasSellingPrices ? formatDZD(projectedNetProfitDZD) : '0.00 DZD';
+            } else {
+                const convertedCost = convertFromDZD(grandTotalCostDZD, displayCurrency);
+                const convertedRevenue = convertFromDZD(projectedRevenueDZD, displayCurrency);
+                const convertedProfit = convertFromDZD(projectedNetProfitDZD, displayCurrency);
+                
+                grandTotalCostEl.textContent = `${convertedCost.toFixed(2)} ${displayCurrency}`;
+                projectedRevenueEl.textContent = hasSellingPrices ? `${convertedRevenue.toFixed(2)} ${displayCurrency}` : `0.00 ${displayCurrency}`;
+                projectedNetProfitEl.textContent = hasSellingPrices ? `${convertedProfit.toFixed(2)} ${displayCurrency}` : `0.00 ${displayCurrency}`;
+            }
+            
+            overallMarginEl.textContent = hasSellingPrices ? `${overallMargin.toFixed(2)}%` : '0.00%';
+            
+            // Color code the profit and margin
+            if (projectedNetProfitDZD < 0) {
+                projectedNetProfitEl.style.color = '#ef4444'; // red for loss
+                overallMarginEl.style.color = '#ef4444';
+            } else if (projectedNetProfitDZD > 0) {
+                projectedNetProfitEl.style.color = '#10b981'; // green for profit
+                overallMarginEl.style.color = '#10b981';
+            } else {
+                projectedNetProfitEl.style.color = '';
+                overallMarginEl.style.color = '';
+            }
+        }
+        
+        function updateAllProfitAnalysis() {
+            products.forEach(p => updateProfitAnalysis(p.id));
+        }
+        
+        function updateSellingPrice(productId, value) {
+            const sellingPrice = parseFloat(value);
+            const product = products.find(p => p.id === productId);
+            
+            if (!isNaN(sellingPrice) && product) {
+                // Clear margin field since user is entering selling price directly
+                document.getElementById(`margin-${productId}`).value = '';
+                
+                // Store the selling price
+                product.sellingPrice = sellingPrice;
+                
+                // Calculate and display actual margin and profit
+                calculateActualMarginAndProfit(productId);
+            } else if (value === '' && product) {
+                // Clear the selling price if empty
+                product.sellingPrice = null;
+                document.getElementById(`actual-margin-${productId}`).textContent = '--';
+                document.getElementById(`actual-margin-${productId}`).style.color = '';
+                document.getElementById(`total-profit-${productId}`).textContent = '--';
+                document.getElementById(`total-profit-${productId}`).style.color = '';
+            }
+        }
+        
+        function updateMargin(productId, value) {
+            const margin = parseFloat(value);
+            const product = products.find(p => p.id === productId);
+            
+            if (!isNaN(margin) && product) {
+                // Calculate selling price based on desired margin
+                if (product.breakevenDZD) {
+                    const sellingPrice = product.breakevenDZD * (1 + margin / 100);
+                    document.getElementById(`selling-${productId}`).value = sellingPrice.toFixed(2);
+                    
+                    // Store the selling price
+                    product.sellingPrice = sellingPrice;
+                    
+                    // Calculate and display actual margin and profit
+                    calculateActualMarginAndProfit(productId);
+                }
+            } else if (value === '' && product) {
+                // If margin is cleared, keep the selling price but recalculate
+                if (product.sellingPrice) {
+                    calculateActualMarginAndProfit(productId);
+                }
+            }
+        }
+        
+        function updateProfitDisplay() {
+            updateAllProfitAnalysis();
+        }
+        
+        // Utility functions
+        function formatDZD(value) {
+            return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DZD';
+        }
+        
+        function convertFromDZD(amountDZD, toCurrency) {
+            if (toCurrency === 'DZD') return amountDZD;
+            
+            // Use performConversion with the exact equations
+            return performConversion(amountDZD, 'DZD', toCurrency);
+        }
+        
+        // Rate reference management
+        function updateRateReference() {
+            const selector = document.getElementById('rate-reference');
+            activeRateReference = selector.value;
+            
+            // Save to localStorage
+            localStorage.setItem('activeRateReference', activeRateReference);
+            
+            // Update display
+            updateActiveRateDisplay();
+            
+            // Recalculate all products and expenses if on profit tab
+            if (currentTab === 'profit') {
+                products.forEach(p => updateProductTotal(p.id));
+                expenses.forEach(e => updateExpenseTotal(e.id));
+            }
+        }
+        
+        function updateActiveRateDisplay() {
+            const display = document.getElementById('active-rate-display');
+            const rate = manualRates[activeRateReference];
+            
+            if (rate && useManualRates) {
+                display.textContent = `Active: 1 ${activeRateReference} = ${rate} DZD`;
+                display.style.color = '#059669'; // green
+            } else {
+                display.textContent = `No ${activeRateReference} rate defined or using API rates`;
+                display.style.color = '#dc2626'; // red
+            }
+        }
+        
+        // Profit tab rate reference management
+        function updateProfitRateReference() {
+            const selector = document.getElementById('profit-rate-reference');
+            profitRateReference = selector.value;
+            
+            // Save to localStorage
+            localStorage.setItem('profitRateReference', profitRateReference);
+            
+            // Update display
+            updateProfitActiveRateDisplay();
+            
+            // Recalculate all products and expenses with new rate
+            products.forEach(p => updateProductTotal(p.id));
+            expenses.forEach(e => updateExpenseTotal(e.id));
+        }
+        
+        function updateProfitActiveRateDisplay() {
+            const display = document.getElementById('profit-active-rate-display');
+            const rate = profitRateReference === 'EUR' ? FIXED_RATES.EUR_DZD : FIXED_RATES.USD_DZD;
+            
+            display.textContent = `Active: 1 ${profitRateReference} = ${rate} DZD`;
+            display.style.color = '#059669'; // green
+        }
+        
+        // Perform conversion for profit tab using profit rate reference
+        function performProfitConversion(amount, from, to) {
+            if (from === to) return amount;
+            
+            // Use the profit rate reference (EUR or USD) for DZD conversions
+            const useEURPath = profitRateReference === 'EUR';
+            
+            if (useEURPath) {
+                // EUR-based conversions using fixed rates
+                if (from === 'EUR' && to === 'DZD') return amount * FIXED_RATES.EUR_DZD;
+                if (from === 'DZD' && to === 'EUR') return amount / FIXED_RATES.EUR_DZD;
+                if (from === 'USD' && to === 'DZD') {
+                    // Convert USD to EUR, then EUR to DZD
+                    const eur = (amount * 235) / 275;
+                    return eur * 275;
+                }
+                if (from === 'CNY' && to === 'DZD') {
+                    // Convert CNY to EUR, then EUR to DZD
+                    const eur = amount / FIXED_RATES.EUR_CNY;
+                    return eur * FIXED_RATES.EUR_DZD;
+                }
+            } else {
+                // USD-based conversions using fixed rates
+                if (from === 'USD' && to === 'DZD') return amount * FIXED_RATES.USD_DZD;
+                if (from === 'DZD' && to === 'USD') return amount / FIXED_RATES.USD_DZD;
+                if (from === 'EUR' && to === 'DZD') {
+                    // Convert EUR to USD, then USD to DZD
+                    const usd = (amount * 275) / 235;
+                    return usd * 235;
+                }
+                if (from === 'CNY' && to === 'DZD') {
+                    // Convert CNY to USD, then USD to DZD
+                    const usd = amount / FIXED_RATES.USD_CNY;
+                    return usd * FIXED_RATES.USD_DZD;
+                }
+            }
+            
+            // For GBP and JPY, use performConversion
+            return performConversion(amount, from, to);
+        }
+        
+        // Export and Print Functions
+        function exportToHTML() {
+            const reportDate = new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Generate report content
+            let htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profit Analysis Report - ${reportDate}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        h1 {
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .report-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        .section h2 {
+            color: #34495e;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: white;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #ecf0f1;
+        }
+        .profit {
+            color: #27ae60;
+        }
+        .loss {
+            color: #e74c3c;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .summary-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .summary-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        .summary-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .meta-info {
+            background: #ecf0f1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        @media print {
+            body {
+                padding: 10px;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <h1>Currency Profit Calculator - Analysis Report</h1>
+        <p>Generated on: ${reportDate}</p>
+    </div>
+    
+    <div class="meta-info">
+        <strong>Exchange Rates:</strong> 
+        ${manualRates.EUR ? `1 EUR = ${manualRates.EUR} DZD` : 'EUR rate not defined'} | 
+        ${manualRates.USD ? `1 USD = ${manualRates.USD} DZD` : 'USD rate not defined'}<br>
+        <strong>Rate Reference:</strong> ${activeRateReference}<br>
+        <strong>Mode:</strong> ${useManualRates ? 'Manual Rates' : 'API Rates'}
+    </div>
+`;
+            
+            // Products Section
+            htmlContent += `
+    <div class="section">
+        <h2>Products Information</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Price</th>
+                    <th>Currency</th>
+                    <th>Quantity</th>
+                    <th>Unit</th>
+                    <th>Items/Box</th>
+                    <th>Total (DZD)</th>
+                </tr>
+            </thead>
+            <tbody>`;
+            
+            products.forEach(product => {
+                if (product.name || product.price) {
+                    htmlContent += `
+                <tr>
+                    <td>${product.name || 'N/A'}</td>
+                    <td>${product.price || '--'}</td>
+                    <td>${product.currency}</td>
+                    <td>${product.quantity || '--'}</td>
+                    <td>${product.unit}</td>
+                    <td>${product.itemsPerBox || '--'}</td>
+                    <td>${product.totalDZD ? formatDZD(product.totalDZD) : '--'}</td>
+                </tr>`;
+                }
+            });
+            
+            const totalProductsDZD = products.reduce((sum, p) => sum + (p.totalDZD || 0), 0);
+            htmlContent += `
+                <tr class="total-row">
+                    <td colspan="6">Total:</td>
+                    <td>${formatDZD(totalProductsDZD)}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>`;
+            
+            // Expenses Section
+            const tax = totalProductsDZD * 0.05;
+            htmlContent += `
+    <div class="section">
+        <h2>Fixed Expenses</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Expense Name</th>
+                    <th>Amount</th>
+                    <th>Currency</th>
+                    <th>Total (DZD)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>TAX (5% of products)</td>
+                    <td>${tax.toFixed(2)}</td>
+                    <td>DZD</td>
+                    <td>${formatDZD(tax)}</td>
+                </tr>`;
+            
+            expenses.forEach(expense => {
+                if (expense.name || expense.amount) {
+                    htmlContent += `
+                <tr>
+                    <td>${expense.name || 'N/A'}</td>
+                    <td>${expense.amount || '--'}</td>
+                    <td>${expense.currency}</td>
+                    <td>${expense.totalDZD ? formatDZD(expense.totalDZD) : '--'}</td>
+                </tr>`;
+                }
+            });
+            
+            const totalExpensesDZD = expenses.reduce((sum, e) => sum + (e.totalDZD || 0), 0) + tax;
+            htmlContent += `
+                <tr class="total-row">
+                    <td colspan="3">Total:</td>
+                    <td>${formatDZD(totalExpensesDZD)}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>`;
+            
+            // Profit Analysis Section
+            htmlContent += `
+    <div class="section">
+        <h2>Profit Analysis</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Break-even Price</th>
+                    <th>Selling Price</th>
+                    <th>Competitor Price</th>
+                    <th>Actual Margin (%)</th>
+                    <th>Total Profit</th>
+                </tr>
+            </thead>
+            <tbody>`;
+            
+            products.forEach(product => {
+                if (product.name || product.price) {
+                    const sellingPrice = product.sellingPriceDZD || '--';
+                    const margin = product.sellingPriceDZD && product.breakevenDZD ? 
+                        ((product.sellingPriceDZD - product.breakevenDZD) / product.breakevenDZD * 100).toFixed(2) + '%' : '--';
+                    const profitClass = product.totalProfitDZD && product.totalProfitDZD > 0 ? 'profit' : 
+                                       product.totalProfitDZD && product.totalProfitDZD < 0 ? 'loss' : '';
+                    
+                    htmlContent += `
+                <tr>
+                    <td>${product.name || 'N/A'}</td>
+                    <td>${product.breakevenDZD ? formatDZD(product.breakevenDZD) : '--'}</td>
+                    <td>${sellingPrice !== '--' ? formatDZD(sellingPrice) : '--'}</td>
+                    <td>${product.competitorPrice || '--'}</td>
+                    <td class="${profitClass}">${margin}</td>
+                    <td class="${profitClass}">${product.totalProfitDZD !== undefined ? formatDZD(product.totalProfitDZD) : '--'}</td>
+                </tr>`;
+                }
+            });
+            
+            htmlContent += `
+            </tbody>
+        </table>`;
+            
+            // Summary Metrics
+            const grandTotalCostDZD = totalProductsDZD + totalExpensesDZD;
+            let projectedRevenueDZD = 0;
+            products.forEach(p => {
+                if (p.sellingPriceDZD && p.quantity) {
+                    projectedRevenueDZD += p.sellingPriceDZD * p.quantity;
+                }
+            });
+            const projectedNetProfitDZD = projectedRevenueDZD - grandTotalCostDZD;
+            const overallMargin = grandTotalCostDZD > 0 ? (projectedNetProfitDZD / grandTotalCostDZD) * 100 : 0;
+            
+            htmlContent += `
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-label">Grand Total Cost</div>
+                <div class="summary-value">${formatDZD(grandTotalCostDZD)}</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Projected Revenue</div>
+                <div class="summary-value">${formatDZD(projectedRevenueDZD)}</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Projected Net Profit</div>
+                <div class="summary-value ${projectedNetProfitDZD >= 0 ? 'profit' : 'loss'}">${formatDZD(projectedNetProfitDZD)}</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Overall Margin</div>
+                <div class="summary-value ${overallMargin >= 0 ? 'profit' : 'loss'}">${overallMargin.toFixed(2)}%</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+            
+            // Create and download the file
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `profit-report-${new Date().getTime()}.html`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            // Show confirmation
+            alert('Report saved successfully! The file has been downloaded to your computer.');
+        }
+        
+        // New functions for tax and report management
+        function toggleTaxInclusion() {
+            includeTax = document.getElementById('include-tax').checked;
+            
+            // Hide/show tax row
+            const taxRow = document.querySelector('#expenses-tbody tr');
+            if (includeTax) {
+                taxRow.style.display = '';
+            } else {
+                taxRow.style.display = 'none';
+            }
+            
+            // Update all calculations
+            updateTax();
+            updateExpensesTotal();
+            updateAllProfitAnalysis();
+        }
+        
+        function newReport() {
+            if (confirm('Are you sure you want to start a new report? All current data will be cleared.')) {
+                // Clear all data
+                products = [];
+                expenses = [];
+                productIdCounter = 0;
+                expenseIdCounter = 0;
+                
+                // Clear product rows
+                document.getElementById('products-tbody').innerHTML = '';
+                document.getElementById('profit-analysis-tbody').innerHTML = '';
+                
+                // Clear expense rows except tax
+                const taxRow = document.querySelector('#expenses-tbody tr');
+                document.getElementById('expenses-tbody').innerHTML = '';
+                document.getElementById('expenses-tbody').appendChild(taxRow);
+                
+                // Reset report name
+                document.getElementById('report-name').value = 'Profit Analysis Report';
+                
+                // Update displays
+                updateProductsTotal();
+                updateTax();
+                updateExpensesTotal();
+                updateProfitSummary();
+            }
+        }
+        
+        function printReport() {
+            // Store current tab
+            const previousTab = currentTab;
+            
+            // Switch to profit tab if not already there
+            if (currentTab !== 'profit') {
+                switchTab('profit');
+            }
+            
+            // Create a print-friendly version
+            const printWindow = window.open('', '_blank');
+            const reportDate = new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            let printContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profit Analysis Report</title>
+    <style>
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+        }
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+            padding: 8px;
+            text-align: left;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        .meta {
+            background: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .profit { color: #27ae60; }
+        .loss { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <h1>Currency Profit Calculator - Analysis Report</h1>
+    <div class="meta">
+        <strong>Date:</strong> ${reportDate}<br>
+        <strong>Exchange Rates:</strong> 
+        ${manualRates.EUR ? `1 EUR = ${manualRates.EUR} DZD` : 'EUR rate not defined'} | 
+        ${manualRates.USD ? `1 USD = ${manualRates.USD} DZD` : 'USD rate not defined'}<br>
+        <strong>Rate Reference:</strong> ${activeRateReference}
+    </div>`;
+            
+            // Get the content from the current page
+            const profitContent = document.getElementById('content-profit').cloneNode(true);
+            
+            // Remove buttons from the cloned content
+            const buttons = profitContent.querySelectorAll('button');
+            buttons.forEach(btn => btn.remove());
+            
+            // Remove selectors
+            const selects = profitContent.querySelectorAll('select');
+            selects.forEach(sel => {
+                const span = document.createElement('span');
+                span.textContent = sel.options[sel.selectedIndex].text;
+                sel.parentNode.replaceChild(span, sel);
+            });
+            
+            // Remove input fields and replace with values
+            const inputs = profitContent.querySelectorAll('input');
+            inputs.forEach(input => {
+                const span = document.createElement('span');
+                span.textContent = input.value || '--';
+                input.parentNode.replaceChild(span, input);
+            });
+            
+            printContent += profitContent.innerHTML;
+            printContent += `
+</body>
+</html>`;
+            
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+                
+                // Restore previous tab if different
+                if (previousTab !== 'profit') {
+                    switchTab(previousTab);
+                }
+            }, 500);
+        }
+    </script>
+</body>
+</html>
