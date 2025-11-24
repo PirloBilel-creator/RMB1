@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Currency Profit Calculator App</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
@@ -265,6 +267,24 @@
                     </div>
                 </div>
                 
+                <!-- Sorting Filter for Products -->
+                <div class="mb-3 flex items-center gap-2">
+                    <label class="text-sm font-medium text-gray-700">Sort by:</label>
+                    <select id="products-sort" onchange="sortProducts()" class="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">None</option>
+                        <option value="name-asc">Product Name (A-Z)</option>
+                        <option value="name-desc">Product Name (Z-A)</option>
+                        <option value="price-asc">Price (Low to High)</option>
+                        <option value="price-desc">Price (High to Low)</option>
+                        <option value="currency">Currency</option>
+                        <option value="quantity-asc">Quantity (Low to High)</option>
+                        <option value="quantity-desc">Quantity (High to Low)</option>
+                        <option value="unit">Unit</option>
+                        <option value="total-asc">Total DZD (Low to High)</option>
+                        <option value="total-desc">Total DZD (High to Low)</option>
+                    </select>
+                </div>
+                
                 <p class="text-sm text-gray-600 mb-4" id="current-rates-display">Fixed Rates: 1 EUR = 275 DZD | 1 USD = 235 DZD</p>
                 
                 <div class="overflow-x-auto">
@@ -301,6 +321,21 @@
             <!-- Fixed Expenses Section -->
             <div class="bg-amber-50 rounded-lg p-3 sm:p-6 mb-4 sm:mb-6">
                 <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">Fixed Expenses</h2>
+                
+                <!-- Sorting Filter for Expenses -->
+                <div class="mb-3 flex items-center gap-2">
+                    <label class="text-sm font-medium text-gray-700">Sort by:</label>
+                    <select id="expenses-sort" onchange="sortExpenses()" class="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500">
+                        <option value="">None</option>
+                        <option value="name-asc">Expense Name (A-Z)</option>
+                        <option value="name-desc">Expense Name (Z-A)</option>
+                        <option value="amount-asc">Amount (Low to High)</option>
+                        <option value="amount-desc">Amount (High to Low)</option>
+                        <option value="currency">Currency</option>
+                        <option value="total-asc">Total DZD (Low to High)</option>
+                        <option value="total-desc">Total DZD (High to Low)</option>
+                    </select>
+                </div>
                 
                 <div class="mb-4 flex flex-col sm:flex-row gap-4">
                     <div>
@@ -1992,6 +2027,324 @@
                     switchTab(previousTab);
                 }
             }, 500);
+        }
+        
+        // Sorting Functions
+        function sortProducts() {
+            const sortValue = document.getElementById('products-sort').value;
+            if (!sortValue) return;
+            
+            const [field, direction] = sortValue.split('-');
+            
+            products.sort((a, b) => {
+                let aVal, bVal;
+                
+                switch(field) {
+                    case 'name':
+                        aVal = a.name || '';
+                        bVal = b.name || '';
+                        break;
+                    case 'price':
+                        aVal = a.price || 0;
+                        bVal = b.price || 0;
+                        break;
+                    case 'currency':
+                        aVal = a.currency || '';
+                        bVal = b.currency || '';
+                        break;
+                    case 'quantity':
+                        aVal = a.quantity || 0;
+                        bVal = b.quantity || 0;
+                        break;
+                    case 'unit':
+                        aVal = a.unit || '';
+                        bVal = b.unit || '';
+                        break;
+                    case 'total':
+                        aVal = a.totalDZD || 0;
+                        bVal = b.totalDZD || 0;
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+                
+                if (direction === 'asc' || !direction) {
+                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+            });
+            
+            // Rerender products table
+            const tbody = document.getElementById('products-tbody');
+            tbody.innerHTML = '';
+            
+            products.forEach(product => {
+                const row = document.createElement('tr');
+                row.id = `product-row-${product.id}`;
+                row.innerHTML = `
+                    <td class="px-4 py-2">
+                        <input type="text" placeholder="Product name" class="w-full px-2 py-1 border rounded"
+                               value="${product.name || ''}"
+                               onchange="updateProduct(${product.id}, 'name', this.value)">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="text" placeholder="Price" class="numeric-input px-2 py-1 border rounded"
+                               value="${product.price || ''}"
+                               oninput="validateNumericInput(this)"
+                               onchange="updateProduct(${product.id}, 'price', parseFloat(this.value))">
+                    </td>
+                    <td class="px-4 py-2">
+                        <select class="px-2 py-1 border rounded" onchange="updateProduct(${product.id}, 'currency', this.value)">
+                            <option value="USD" ${product.currency === 'USD' ? 'selected' : ''}>USD</option>
+                            <option value="EUR" ${product.currency === 'EUR' ? 'selected' : ''}>EUR</option>
+                            <option value="DZD" ${product.currency === 'DZD' ? 'selected' : ''}>DZD</option>
+                            <option value="GBP" ${product.currency === 'GBP' ? 'selected' : ''}>GBP</option>
+                            <option value="CNY" ${product.currency === 'CNY' ? 'selected' : ''}>CNY</option>
+                        </select>
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="text" placeholder="Quantity" class="numeric-input px-2 py-1 border rounded"
+                               value="${product.quantity || ''}"
+                               oninput="validateNumericInput(this)"
+                               onchange="updateProduct(${product.id}, 'quantity', parseFloat(this.value))">
+                    </td>
+                    <td class="px-4 py-2">
+                        <select class="px-2 py-1 border rounded" onchange="updateProduct(${product.id}, 'unit', this.value)">
+                            <option value="Item" ${product.unit === 'Item' ? 'selected' : ''}>Item</option>
+                            <option value="Unit" ${product.unit === 'Unit' ? 'selected' : ''}>Unit</option>
+                            <option value="Box" ${product.unit === 'Box' ? 'selected' : ''}>Box</option>
+                            <option value="Kg" ${product.unit === 'Kg' ? 'selected' : ''}>Kg</option>
+                        </select>
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="text" placeholder="Items" class="numeric-input px-2 py-1 border rounded ${(product.unit === 'Box' || product.unit === 'Unit') ? '' : 'hidden'}"
+                               id="items-per-box-${product.id}"
+                               value="${product.itemsPerBox || ''}"
+                               oninput="validateNumericInput(this)"
+                               onchange="updateProduct(${product.id}, 'itemsPerBox', parseFloat(this.value))">
+                    </td>
+                    <td class="px-4 py-2 font-medium currency-display" id="product-total-${product.id}">${product.totalDZD ? formatDZD(product.totalDZD) : '--'}</td>
+                    <td class="px-4 py-2">
+                        <button onclick="removeProduct(${product.id})" class="text-red-600 hover:text-red-800">×</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function sortExpenses() {
+            const sortValue = document.getElementById('expenses-sort').value;
+            if (!sortValue) return;
+            
+            const [field, direction] = sortValue.split('-');
+            
+            expenses.sort((a, b) => {
+                let aVal, bVal;
+                
+                switch(field) {
+                    case 'name':
+                        aVal = a.name || '';
+                        bVal = b.name || '';
+                        break;
+                    case 'amount':
+                        aVal = a.amount || 0;
+                        bVal = b.amount || 0;
+                        break;
+                    case 'currency':
+                        aVal = a.currency || '';
+                        bVal = b.currency || '';
+                        break;
+                    case 'total':
+                        aVal = a.totalDZD || 0;
+                        bVal = b.totalDZD || 0;
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+                
+                if (direction === 'asc' || !direction) {
+                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+            });
+            
+            // Rerender expenses table
+            const tbody = document.getElementById('expenses-tbody');
+            const taxRow = tbody.querySelector('tr'); // Save tax row
+            tbody.innerHTML = '';
+            tbody.appendChild(taxRow); // Restore tax row
+            
+            expenses.forEach(expense => {
+                const row = document.createElement('tr');
+                row.id = `expense-row-${expense.id}`;
+                row.innerHTML = `
+                    <td class="px-4 py-2">
+                        <input type="text" placeholder="Expense name" class="w-full px-2 py-1 border rounded"
+                               value="${expense.name || ''}"
+                               onchange="updateExpense(${expense.id}, 'name', this.value)">
+                    </td>
+                    <td class="px-4 py-2">
+                        <input type="text" placeholder="Amount" class="numeric-input px-2 py-1 border rounded"
+                               value="${expense.amount || ''}"
+                               oninput="validateNumericInput(this)"
+                               onchange="updateExpense(${expense.id}, 'amount', parseFloat(this.value))">
+                    </td>
+                    <td class="px-4 py-2">
+                        <select class="px-2 py-1 border rounded" onchange="updateExpense(${expense.id}, 'currency', this.value)">
+                            <option value="DZD" ${expense.currency === 'DZD' ? 'selected' : ''}>DZD</option>
+                            <option value="USD" ${expense.currency === 'USD' ? 'selected' : ''}>USD</option>
+                            <option value="EUR" ${expense.currency === 'EUR' ? 'selected' : ''}>EUR</option>
+                            <option value="GBP" ${expense.currency === 'GBP' ? 'selected' : ''}>GBP</option>
+                            <option value="CNY" ${expense.currency === 'CNY' ? 'selected' : ''}>CNY</option>
+                        </select>
+                    </td>
+                    <td class="px-4 py-2 font-medium currency-display" id="expense-total-${expense.id}">${expense.totalDZD ? formatDZD(expense.totalDZD) : '--'}</td>
+                    <td class="px-4 py-2">
+                        <button onclick="removeExpense(${expense.id})" class="text-red-600 hover:text-red-800">×</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Update display for each expense
+            expenses.forEach(e => updateExpenseTotal(e.id));
+        }
+        
+        // Export to PDF Function
+        function exportToPDF() {
+            if (typeof window.jspdf === 'undefined') {
+                alert('PDF library not loaded. Using HTML export instead.');
+                exportToHTML();
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape', 'mm', 'a4');
+            
+            const reportDate = new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const reportName = document.getElementById('report-name').value || 'Profit Analysis Report';
+            
+            // Set up document
+            doc.setFontSize(20);
+            doc.setTextColor(44, 62, 80);
+            doc.text(reportName, 15, 20);
+            
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${reportDate}`, 15, 28);
+            doc.text(`Exchange Rates: 1 EUR = ${manualRates.EUR} DZD | 1 USD = ${manualRates.USD} DZD`, 15, 35);
+            
+            let yPos = 45;
+            
+            // Products Section
+            doc.setFontSize(14);
+            doc.setTextColor(44, 62, 80);
+            doc.text('Products Information', 15, yPos);
+            yPos += 10;
+            
+            // Create products table data
+            const productsData = products.filter(p => p.name || p.price).map(p => [
+                p.name || 'N/A',
+                p.price || '--',
+                p.currency || '--',
+                p.quantity || '--',
+                p.unit || '--',
+                p.itemsPerBox || '--',
+                p.totalDZD ? formatDZD(p.totalDZD) : '--'
+            ]);
+            
+            if (productsData.length > 0) {
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Product Name', 'Price', 'Currency', 'Quantity', 'Unit', 'Items/Box', 'Total (DZD)']],
+                    body: productsData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [52, 152, 219] },
+                    margin: { left: 15, right: 15 }
+                });
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+            
+            // Expenses Section
+            doc.setFontSize(14);
+            doc.text('Fixed Expenses', 15, yPos);
+            yPos += 10;
+            
+            const tax = products.reduce((sum, p) => sum + (p.totalDZD || 0), 0) * 0.05;
+            const expensesData = [
+                ['TAX (5% of products)', tax.toFixed(2), 'DZD', formatDZD(tax)],
+                ...expenses.filter(e => e.name || e.amount).map(e => [
+                    e.name || 'N/A',
+                    e.amount || '--',
+                    e.currency || '--',
+                    e.totalDZD ? formatDZD(e.totalDZD) : '--'
+                ])
+            ];
+            
+            if (expensesData.length > 0) {
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Expense Name', 'Amount', 'Currency', 'Total (DZD)']],
+                    body: expensesData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [52, 152, 219] },
+                    margin: { left: 15, right: 15 }
+                });
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+            
+            // Summary
+            const totalProductsDZD = products.reduce((sum, p) => sum + (p.totalDZD || 0), 0);
+            const totalExpensesDZD = expenses.reduce((sum, e) => sum + (e.totalDZD || 0), 0) + tax;
+            const grandTotalCostDZD = totalProductsDZD + totalExpensesDZD;
+            
+            let projectedRevenueDZD = 0;
+            products.forEach(p => {
+                if (p.sellingPriceDZD && p.quantity) {
+                    projectedRevenueDZD += p.sellingPriceDZD * p.quantity;
+                }
+            });
+            
+            const projectedNetProfitDZD = projectedRevenueDZD - grandTotalCostDZD;
+            const overallMargin = grandTotalCostDZD > 0 ? (projectedNetProfitDZD / grandTotalCostDZD) * 100 : 0;
+            
+            // Add summary section
+            doc.setFontSize(14);
+            doc.text('Summary', 15, yPos);
+            yPos += 10;
+            
+            doc.setFontSize(10);
+            doc.text(`Grand Total Cost: ${formatDZD(grandTotalCostDZD)}`, 15, yPos);
+            yPos += 7;
+            doc.text(`Projected Revenue: ${formatDZD(projectedRevenueDZD)}`, 15, yPos);
+            yPos += 7;
+            doc.text(`Projected Net Profit: ${formatDZD(projectedNetProfitDZD)}`, 15, yPos);
+            yPos += 7;
+            doc.text(`Overall Margin: ${overallMargin.toFixed(2)}%`, 15, yPos);
+            
+            // Save the PDF
+            doc.save(`${reportName.replace(/[^a-z0-9]/gi, '_')}_${new Date().getTime()}.pdf`);
+            
+            alert('Report saved as PDF successfully!');
         }
     </script>
 </body>
